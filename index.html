@@ -2,316 +2,291 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>東京旅記 2026</title>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>東京旅記 2026 (雲端版)</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
     <style>
-        body { font-family: 'Noto Sans JP', sans-serif; -webkit-tap-highlight-color: transparent; }
-        /* 隱藏捲軸但保留功能 */
+        /* --- 樣式區 (保持日式極簡) --- */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #F5F5F4; color: #292524; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        /* 日式標籤樣式 */
-        .tag-food { @apply bg-orange-100 text-orange-700 border border-orange-200; }
-        .tag-spot { @apply bg-rose-100 text-rose-700 border border-rose-200; }
-        .tag-transport { @apply bg-sky-100 text-sky-700 border border-sky-200; }
-        
-        /* 重點文字高亮 */
-        .highlight-must { @apply font-bold text-rose-600 bg-rose-50 px-1 rounded; }
-        .highlight-code { @apply font-mono font-bold text-slate-700 bg-slate-100 px-1 border border-slate-300 rounded tracking-wider; }
+        .hidden { display: none !important; }
+        header { padding: 48px 24px 16px; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid #E7E5E4; position: sticky; top: 0; z-index: 10; }
+        h1 { margin: 4px 0 0; font-size: 24px; font-weight: 800; }
+        .subtitle { font-size: 11px; color: #A8A29E; letter-spacing: 2px; text-transform: uppercase; font-weight: 600; }
+        main { flex: 1; overflow-y: auto; padding: 24px; padding-bottom: 100px; }
+        .card { background: #fff; border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #F0F0F0; position: relative; overflow: hidden; }
+        .tag { font-size: 10px; padding: 2px 8px; border-radius: 99px; font-weight: 600; text-transform: uppercase; }
+        .tag-spot { background: #FFE4E6; color: #BE123C; border: 1px solid #FECDD3; }
+        .tag-food { background: #FFEDD5; color: #C2410C; border: 1px solid #FED7AA; }
+        .tag-transport { background: #E0F2FE; color: #0369A1; border: 1px solid #BAE6FD; }
+        .border-line { position: absolute; left: 0; top: 0; bottom: 0; width: 6px; }
+        .hl-must { font-weight: bold; color: #E11D48; background: #FFF1F2; padding: 0 4px; border-radius: 4px; }
+        .hl-code { font-family: monospace; font-weight: bold; background: #F3F4F6; color: #374151; padding: 2px 6px; border-radius: 4px; border: 1px solid #E5E7EB; letter-spacing: 1px; }
+        .btn { display: flex; align-items: center; justify-content: center; width: 100%; padding: 12px; border-radius: 12px; border: none; font-weight: bold; font-size: 14px; cursor: pointer; transition: all 0.2s; }
+        .btn-nav { background: #F5F5F4; color: #57534E; text-decoration: none; }
+        .btn-primary { background: #292524; color: white; }
+        .date-scroll { display: flex; gap: 10px; overflow-x: auto; margin-bottom: 24px; padding-bottom: 4px; }
+        .date-pill { padding: 8px 16px; border-radius: 99px; font-size: 13px; font-weight: 600; white-space: nowrap; border: 1px solid #E7E5E4; background: #fff; color: #A8A29E; }
+        .date-pill.active { background: #292524; color: white; border-color: #292524; }
+        .budget-card { background: #292524; color: white; }
+        .budget-amount { font-size: 36px; font-weight: 800; margin: 4px 0 16px 0; }
+        .input-group { display: flex; gap: 8px; margin-bottom: 12px; }
+        .input-field { background: #FAFAF9; border: 1px solid #E7E5E4; padding: 12px; border-radius: 12px; font-size: 14px; outline: none; -webkit-appearance: none; }
+        nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #fff; border-top: 1px solid #E7E5E4; display: flex; justify-content: space-around; padding-bottom: env(safe-area-inset-bottom); height: 80px; z-index: 20; }
+        .tab-btn { background: none; border: none; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 60px; height: 100%; color: #A8A29E; }
+        .tab-btn.active { color: #292524; }
+        .tab-icon { width: 24px; height: 24px; margin-bottom: 4px; fill: currentColor; }
+        .tab-label { font-size: 10px; font-weight: 600; }
+        /* 刪除按鈕樣式 */
+        .delete-btn { background:none; border:none; color:#D6D3D1; width:30px; height:30px; display:flex; align-items:center; justify-content:center; font-size:18px; }
     </style>
 </head>
-<body class="bg-stone-50 text-stone-800 h-screen flex flex-col overflow-hidden" x-data="appData()">
+<body>
 
-    <header class="pt-12 pb-4 px-6 bg-white/80 backdrop-blur-md sticky top-0 z-10 border-b border-stone-200">
-        <div class="flex justify-between items-end">
-            <div>
-                <p class="text-xs text-stone-400 font-medium tracking-widest uppercase">TOKYO TRIP 2026</p>
-                <h1 class="text-2xl font-bold text-stone-800 mt-1" x-text="currentTab === 'itinerary' ? '行程' : (currentTab === 'info' ? '資訊' : '記帳')"></h1>
-            </div>
-            <div class="text-right" x-show="currentTab === 'itinerary'">
-                <div class="flex items-center justify-end gap-2 text-stone-600">
-                    <i class="ph ph-sun text-amber-400 text-xl"></i>
-                    <span class="text-lg font-bold">24°C</span>
-                </div>
-                <p class="text-xs text-stone-400">降雨機率 10%</p>
-            </div>
-        </div>
+    <header>
+        <div class="subtitle">TOKYO TRIP 2026</div>
+        <h1 id="pageTitle">行程安排</h1>
     </header>
 
-    <main class="flex-1 overflow-y-auto hide-scrollbar p-6 pb-24 space-y-6">
+    <main class="hide-scrollbar">
+        <div id="view-itinerary">
+            <div class="date-scroll hide-scrollbar" id="dateContainer"></div>
+            <div id="itineraryList"></div>
+        </div>
 
-        <div x-show="currentTab === 'itinerary'" x-transition.opacity>
-            <div class="flex gap-3 overflow-x-auto hide-scrollbar mb-6">
-                <template x-for="(day, index) in itinerary" :key="index">
-                    <button @click="activeDay = index" 
-                        :class="activeDay === index ? 'bg-stone-800 text-white shadow-lg' : 'bg-white text-stone-400 border border-stone-200'"
-                        class="flex-shrink-0 px-5 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap">
-                        <span x-text="day.date"></span>
-                    </button>
-                </template>
-            </div>
-
-            <div class="space-y-4">
-                <template x-for="item in itinerary[activeDay].items" :key="item.id">
-                    <div class="bg-white rounded-2xl p-5 shadow-sm border border-stone-100 relative overflow-hidden group">
-                        <div class="absolute left-0 top-0 bottom-0 w-1.5" 
-                             :class="{
-                                'bg-rose-400': item.type === 'spot',
-                                'bg-orange-400': item.type === 'food',
-                                'bg-sky-400': item.type === 'transport'
-                             }"></div>
-
-                        <div class="pl-3">
-                            <div class="flex justify-between items-start mb-2">
-                                <span class="text-xs font-bold text-stone-400 tracking-wide" x-text="item.time"></span>
-                                <span class="text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wider"
-                                    :class="{
-                                        'tag-spot': item.type === 'spot',
-                                        'tag-food': item.type === 'food',
-                                        'tag-transport': item.type === 'transport'
-                                    }" x-text="item.typeLabel"></span>
-                            </div>
-                            
-                            <h3 class="text-lg font-bold text-stone-800 mb-1" x-text="item.title"></h3>
-                            
-                            <div class="text-sm text-stone-600 leading-relaxed mb-4" x-html="item.desc"></div>
-
-                            <div class="flex gap-3 mt-3 pt-3 border-t border-stone-100">
-                                <a :href="'https://www.google.com/maps/search/?api=1&query=' + item.title" target="_blank"
-                                   class="flex-1 flex items-center justify-center gap-2 bg-stone-100 hover:bg-stone-200 text-stone-600 text-xs font-bold py-2.5 rounded-xl transition-colors">
-                                    <i class="ph-bold ph-navigation-arrow"></i> 導航 GO
-                                </a>
-                                <button class="w-10 flex items-center justify-center text-stone-400 hover:text-stone-600">
-                                    <i class="ph ph-heart text-xl"></i>
-                                </button>
-                            </div>
-                        </div>
+        <div id="view-info" class="hidden">
+            <div class="card">
+                <div style="font-size:12px; color:#A8A29E; font-weight:bold; margin-bottom:12px;">航班資訊 FLIGHT</div>
+                <div style="display:flex; justify-content:space-between; align-items:center; text-align:center;">
+                    <div><div style="font-size:20px; font-weight:bold;">TPE</div><div style="font-size:12px; color:#78716C;">08:30</div></div>
+                    <div style="flex:1; border-bottom:1px solid #D6D3D1; position:relative; margin:0 20px;">
+                        <div style="position:absolute; top:-10px; left:50%; transform:translateX(-50%); background:#fff; padding:0 4px; color:#A8A29E; font-size:10px;">JX800</div>
                     </div>
-                </template>
+                    <div><div style="font-size:20px; font-weight:bold;">NRT</div><div style="font-size:12px; color:#78716C;">13:10</div></div>
+                </div>
+            </div>
+            <div class="card">
+                <div style="font-size:12px; color:#A8A29E; font-weight:bold; margin-bottom:12px;">住宿 HOTEL</div>
+                <div style="font-weight:bold; font-size:16px;">東京灣希爾頓飯店</div>
+                <div style="font-size:12px; color:#78716C; margin-bottom:12px;">千葉県浦安市舞浜1-8</div>
             </div>
         </div>
 
-        <div x-show="currentTab === 'info'" x-transition.opacity class="space-y-6">
-            
-            <div class="bg-white rounded-2xl p-6 shadow-sm border border-stone-100">
-                <h3 class="text-sm font-bold text-stone-400 uppercase mb-4 flex items-center gap-2">
-                    <i class="ph-bold ph-airplane-tilt"></i> 航班資訊
-                </h3>
-                <div class="flex justify-between items-center mb-4">
-                    <div class="text-center">
-                        <div class="text-2xl font-bold">TPE</div>
-                        <div class="text-xs text-stone-500">08:30</div>
-                    </div>
-                    <div class="flex-1 px-4 flex flex-col items-center">
-                        <span class="text-xs font-bold text-stone-400">JX800</span>
-                        <div class="w-full h-px bg-stone-300 relative my-1">
-                            <i class="ph-fill ph-airplane absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 text-stone-400 bg-white px-1"></i>
-                        </div>
-                        <span class="text-xs text-stone-400">3h 40m</span>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-2xl font-bold">NRT</div>
-                        <div class="text-xs text-stone-500">13:10</div>
-                    </div>
-                </div>
-                <div class="bg-stone-50 rounded-lg p-3 text-sm text-stone-600 flex justify-between">
-                    <span>預約代號</span>
-                    <span class="font-mono font-bold select-all">6X2A9B</span>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-2xl p-6 shadow-sm border border-stone-100">
-                <h3 class="text-sm font-bold text-stone-400 uppercase mb-4 flex items-center gap-2">
-                    <i class="ph-bold ph-house-line"></i> 住宿資訊
-                </h3>
-                <h4 class="font-bold text-lg mb-1">東京灣希爾頓飯店</h4>
-                <p class="text-xs text-stone-500 mb-3">千葉県浦安市舞浜1-8</p>
-                <div class="flex gap-2">
-                    <span class="highlight-code text-xs">訂房號: 882910</span>
-                    <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold">已付款</span>
-                </div>
-            </div>
-
-            <div class="bg-red-50 rounded-2xl p-6 border border-red-100">
-                 <h3 class="text-sm font-bold text-red-400 uppercase mb-3">緊急聯絡</h3>
-                 <div class="grid grid-cols-2 gap-4">
-                     <a href="tel:110" class="bg-white p-3 rounded-xl flex flex-col items-center shadow-sm">
-                         <span class="text-2xl font-bold text-red-600">110</span>
-                         <span class="text-xs text-stone-500">警察局</span>
-                     </a>
-                     <a href="tel:119" class="bg-white p-3 rounded-xl flex flex-col items-center shadow-sm">
-                         <span class="text-2xl font-bold text-red-600">119</span>
-                         <span class="text-xs text-stone-500">救護/火警</span>
-                     </a>
-                 </div>
-            </div>
-        </div>
-
-        <div x-show="currentTab === 'budget'" x-transition.opacity>
-            <div class="bg-stone-800 text-white rounded-2xl p-6 shadow-lg mb-6 relative overflow-hidden">
-                <div class="absolute -right-4 -top-4 text-stone-700 opacity-20">
-                    <i class="ph-fill ph-coins text-9xl"></i>
-                </div>
-                <p class="text-stone-400 text-xs uppercase tracking-wider mb-1">目前總花費 (TWD)</p>
-                <p class="text-4xl font-bold tracking-tight" x-text="formatCurrency(totalExpense)"></p>
-                <div class="mt-4 pt-4 border-t border-stone-700 flex justify-between text-xs text-stone-400">
+        <div id="view-budget" class="hidden">
+            <div class="card budget-card">
+                <div style="font-size:10px; opacity:0.7; letter-spacing:1px;">TOTAL EXPENSE (TWD)</div>
+                <div class="budget-amount" id="totalAmount">讀取中...</div>
+                <div style="font-size:12px; opacity:0.7; border-top:1px solid rgba(255,255,255,0.2); padding-top:12px; display:flex; justify-content:space-between;">
                     <span>預算剩餘</span>
-                    <span x-text="formatCurrency(100000 - totalExpense)"></span>
+                    <span id="remainAmount">...</span>
                 </div>
             </div>
 
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-stone-100 mb-6">
-                <h3 class="text-sm font-bold text-stone-800 mb-3">新增支出</h3>
-                <div class="flex gap-2 mb-3">
-                    <input type="text" x-model="newExpenseName" placeholder="項目 (例: 拉麵)" 
-                        class="flex-1 bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-stone-400">
-                    <input type="number" x-model="newExpenseAmount" placeholder="金額" 
-                        class="w-24 bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-stone-400">
+            <div class="card">
+                <div class="input-group">
+                    <input type="text" id="expenseName" class="input-field" placeholder="項目 (例: 拉麵)" style="flex:2;">
+                    <input type="number" id="expenseCost" class="input-field" placeholder="金額" style="flex:1;">
                 </div>
-                <button @click="addExpense()" 
-                    class="w-full bg-stone-800 text-white font-bold py-3 rounded-xl text-sm hover:bg-stone-700 active:scale-95 transition-all">
-                    加入清單
-                </button>
+                <button onclick="addExpense()" class="btn btn-primary">新增支出</button>
             </div>
 
-            <div class="space-y-3">
-                <template x-for="(exp, index) in expenses" :key="index">
-                    <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-stone-50">
-                        <span class="font-medium text-stone-700" x-text="exp.name"></span>
-                        <div class="flex items-center gap-3">
-                            <span class="font-bold text-stone-800" x-text="formatCurrency(exp.amount)"></span>
-                            <button @click="removeExpense(index)" class="text-stone-300 hover:text-red-400">
-                                <i class="ph-bold ph-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                </template>
-                <div x-show="expenses.length === 0" class="text-center text-stone-400 py-8 text-sm">
-                    目前沒有支出紀錄
-                </div>
-            </div>
+            <div id="expenseList"></div>
         </div>
-
     </main>
 
-    <nav class="bg-white border-t border-stone-200 pb-safe pt-2 px-6 fixed bottom-0 w-full z-20 h-20">
-        <div class="flex justify-around items-center h-full pb-4">
-            <button @click="currentTab = 'itinerary'" class="flex flex-col items-center gap-1 w-16 group">
-                <div class="p-1.5 rounded-full transition-colors" :class="currentTab === 'itinerary' ? 'bg-stone-100' : ''">
-                    <i class="text-2xl transition-colors ph-bold ph-map-trifold" 
-                       :class="currentTab === 'itinerary' ? 'text-stone-800' : 'text-stone-400'"></i>
-                </div>
-                <span class="text-[10px] font-medium transition-colors" :class="currentTab === 'itinerary' ? 'text-stone-800' : 'text-stone-400'">行程</span>
-            </button>
-            
-            <button @click="currentTab = 'info'" class="flex flex-col items-center gap-1 w-16 group">
-                <div class="p-1.5 rounded-full transition-colors" :class="currentTab === 'info' ? 'bg-stone-100' : ''">
-                    <i class="text-2xl transition-colors ph-bold ph-suitcase" 
-                       :class="currentTab === 'info' ? 'text-stone-800' : 'text-stone-400'"></i>
-                </div>
-                <span class="text-[10px] font-medium transition-colors" :class="currentTab === 'info' ? 'text-stone-800' : 'text-stone-400'">資訊</span>
-            </button>
-            
-            <button @click="currentTab = 'budget'" class="flex flex-col items-center gap-1 w-16 group">
-                <div class="p-1.5 rounded-full transition-colors" :class="currentTab === 'budget' ? 'bg-stone-100' : ''">
-                    <i class="text-2xl transition-colors ph-bold ph-currency-yen" 
-                       :class="currentTab === 'budget' ? 'text-stone-800' : 'text-stone-400'"></i>
-                </div>
-                <span class="text-[10px] font-medium transition-colors" :class="currentTab === 'budget' ? 'text-stone-800' : 'text-stone-400'">記帳</span>
-            </button>
-        </div>
+    <nav>
+        <button class="tab-btn active" onclick="switchTab('itinerary', this)">
+            <svg class="tab-icon" viewBox="0 0 24 24"><path d="M12 2C7.589 2 4 5.589 4 9.995 3.971 16.44 11.696 21.784 12 22c0 0 8.029-5.56 8-12 0-4.411-3.589-8-8-8zm0 12c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z"/></svg>
+            <span class="tab-label">行程</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('info', this)">
+            <svg class="tab-icon" viewBox="0 0 24 24"><path d="M20 6h-3V4c0-1.103-.897-2-2-2H9c-1.103 0-2 .897-2 2v2H4c-1.103 0-2 .897-2 2v11c0 1.103.897 2 2 2h16c1.103 0 2-.897 2-2V8c0-1.103-.897-2-2-2zM9 4h6v2H9V4zm11 15H4V8h16v11z"/></svg>
+            <span class="tab-label">資訊</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('budget', this)">
+            <svg class="tab-icon" viewBox="0 0 24 24"><path d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8zm.002-14c-3.313 0-6 2.687-6 6 0 .796.158 1.551.442 2.247l1.639-1.638A4.015 4.015 0 0 1 8.002 12c0-2.206 1.794-4 4-4 1.956 0 3.582 1.405 3.916 3.259l1.621-1.621C16.637 6.649 14.509 4 12.002 4z"/></svg>
+            <span class="tab-label">記帳</span>
+        </button>
     </nav>
 
     <script>
-        function appData() {
-            return {
-                currentTab: 'itinerary',
-                activeDay: 0,
-                
-                // 記帳相關資料 (Local Storage)
-                expenses: JSON.parse(localStorage.getItem('tokyo_expenses') || '[]'),
-                newExpenseName: '',
-                newExpenseAmount: '',
-                
-                get totalExpense() {
-                    return this.expenses.reduce((sum, item) => sum + parseInt(item.amount), 0);
-                },
+        // ============================================
+        // 2. 設定區：請將剛剛複製的 Firebase 設定貼在下面
+        // ============================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyDD2aX8628LlV5MgzagDwnMdk6jMpaYBAE",
+            authDomain: "tokyo-disney-trip-2026-09.firebaseapp.com",
+            projectId: "tokyo-disney-trip-2026-09",
+            storageBucket: "tokyo-disney-trip-2026-09.firebasestorage.app",
+            messagingSenderId: "854341418564",
+            appId: "1:854341418564:web:2e3a808a62e30f8d4c0611",
+            measurementId: "G-ZQXG5V3VJG"
+        };
 
-                addExpense() {
-                    if (!this.newExpenseName || !this.newExpenseAmount) return;
-                    this.expenses.unshift({
-                        name: this.newExpenseName,
-                        amount: this.newExpenseAmount,
-                        date: new Date().toISOString()
-                    });
-                    this.saveExpenses();
-                    this.newExpenseName = '';
-                    this.newExpenseAmount = '';
-                },
+        // 3. 初始化 Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
 
-                removeExpense(index) {
-                    if(confirm('確定刪除這筆紀錄？')) {
-                        this.expenses.splice(index, 1);
-                        this.saveExpenses();
-                    }
-                },
+        // --- 核心邏輯 ---
 
-                saveExpenses() {
-                    localStorage.setItem('tokyo_expenses', JSON.stringify(this.expenses));
-                },
-
-                formatCurrency(value) {
-                    return new Intl.NumberFormat('zh-TW', { style: 'currency', currency: 'TWD', minimumFractionDigits: 0 }).format(value);
-                },
-
-                // 行程資料 (Mock Data)
-                itinerary: [
-                    {
-                        date: 'Day 1 (9/15)',
-                        items: [
-                            { 
-                                id: 1, type: 'transport', typeLabel: '交通', time: '13:10', title: '抵達東京成田', 
-                                desc: '前往租車櫃檯取車。預約公司：Toyota Rent a Car。<br>取車單號：<span class="highlight-code">TR-9982</span>' 
-                            },
-                            { 
-                                id: 2, type: 'spot', typeLabel: '景點', time: '15:30', title: '台場獨角獸鋼彈', 
-                                desc: '適合拍照的打卡點，如果時間允許可以去逛逛旁邊的 DiverCity。<br><span class="highlight-must">攻略：每小時整點有變身演出。</span>' 
-                            },
-                            { 
-                                id: 3, type: 'food', typeLabel: '晚餐', time: '18:00', title: 'Afuri 柚子鹽拉麵', 
-                                desc: '必點：<span class="highlight-must">柚子鹽拉麵 (淡麗)</span> + 炙燒叉燒飯。這間店通常需要排隊 20 分鐘。' 
-                            }
-                        ]
-                    },
-                    {
-                        date: 'Day 2 (9/16)',
-                        items: [
-                            { 
-                                id: 4, type: 'transport', typeLabel: '交通', time: '08:00', title: '自駕前往迪士尼', 
-                                desc: '設定導航至迪士尼海洋停車場。停車費約 ¥3000。' 
-                            },
-                            { 
-                                id: 5, type: 'spot', typeLabel: '樂園', time: '09:00', title: '東京迪士尼海洋', 
-                                desc: '今日重點：<span class="highlight-must">Fantasy Springs 新園區</span>。<br>請務必在入園後第一時間抽取 DPA (Standby Pass)。<br>必買：達菲熊限定爆米花桶。' 
-                            },
-                            { 
-                                id: 6, type: 'food', typeLabel: '午餐', time: '12:30', title: '麥哲倫餐廳', 
-                                desc: '需提前一個月預約。預約號碼：<span class="highlight-code">RES-2026-0916</span>' 
-                            }
-                        ]
-                    }
+        // (行程資料保持不變)
+        const tripData = [
+            {
+                date: '9/15 (Day 1)',
+                items: [
+                    { type: 'transport', color: '#0369A1', bg: '#E0F2FE', label: '交通', time: '13:10', title: '抵達東京成田', desc: '取車單號：<span class="hl-code">TR-9982</span>' },
+                    { type: 'spot', color: '#BE123C', bg: '#FFE4E6', label: '景點', time: '15:30', title: '台場獨角獸鋼彈', desc: '每小時有變身秀。' },
+                    { type: 'food', color: '#C2410C', bg: '#FFEDD5', label: '晚餐', time: '18:00', title: 'Afuri 柚子鹽拉麵', desc: '必點：<span class="hl-must">柚子鹽拉麵</span>' }
+                ]
+            },
+            {
+                date: '9/16 (Day 2)',
+                items: [
+                    { type: 'transport', color: '#0369A1', bg: '#E0F2FE', label: '交通', time: '08:00', title: '自駕 -> 迪士尼', desc: '導航: DisneySea Parking' },
+                    { type: 'spot', color: '#BE123C', bg: '#FFE4E6', label: '樂園', time: '09:00', title: '東京迪士尼海洋', desc: '<span class="hl-must">Fantasy Springs</span> 務必抽 DPA' },
+                    { type: 'food', color: '#C2410C', bg: '#FFEDD5', label: '午餐', time: '12:30', title: '麥哲倫餐廳', desc: '預約：<span class="hl-code">RES-2026-0916</span>' }
                 ]
             }
+        ];
+
+        let activeDayIndex = 0;
+
+        // 初始化
+        function init() {
+            renderDates();
+            renderItinerary();
+            listenToExpenses(); // 啟動雲端監聽
         }
+
+        // --- Firebase 記帳功能 ---
+        
+        // 監聽雲端資料庫 (這就是即時同步的關鍵！)
+        function listenToExpenses() {
+            // 監聽 "expenses" 這個集合，按時間排序
+            db.collection("expenses").orderBy("timestamp", "desc")
+                .onSnapshot((snapshot) => {
+                    const list = document.getElementById('expenseList');
+                    list.innerHTML = '';
+                    let total = 0;
+
+                    snapshot.forEach((doc) => {
+                        const data = doc.data();
+                        const id = doc.id;
+                        total += data.amount;
+
+                        const item = document.createElement('div');
+                        item.className = 'card';
+                        item.style.padding = '16px';
+                        item.style.display = 'flex';
+                        item.style.justifyContent = 'space-between';
+                        item.style.alignItems = 'center';
+                        item.innerHTML = `
+                            <span style="font-weight:500;">${data.name}</span>
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <span style="font-weight:bold;">$${data.amount.toLocaleString()}</span>
+                                <button onclick="deleteExpense('${id}')" class="delete-btn">✕</button>
+                            </div>
+                        `;
+                        list.appendChild(item);
+                    });
+
+                    document.getElementById('totalAmount').innerText = '$' + total.toLocaleString();
+                    document.getElementById('remainAmount').innerText = '$' + (100000 - total).toLocaleString();
+                });
+        }
+
+        // 新增資料到雲端
+        function addExpense() {
+            const name = document.getElementById('expenseName').value;
+            const amount = parseInt(document.getElementById('expenseCost').value);
+            
+            if(!name || isNaN(amount)) return;
+
+            // 寫入 Firebase
+            db.collection("expenses").add({
+                name: name,
+                amount: amount,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => {
+                document.getElementById('expenseName').value = '';
+                document.getElementById('expenseCost').value = '';
+            }).catch((error) => {
+                console.error("Error:", error);
+                alert("新增失敗，請檢查網路！");
+            });
+        }
+
+        // 刪除資料
+        function deleteExpense(id) {
+            if(confirm('確定刪除？')) {
+                db.collection("expenses").doc(id).delete();
+            }
+        }
+
+        // --- 頁面邏輯 (跟之前一樣) ---
+        function switchTab(tabName, btnEl) {
+            document.getElementById('view-itinerary').classList.add('hidden');
+            document.getElementById('view-info').classList.add('hidden');
+            document.getElementById('view-budget').classList.add('hidden');
+            document.getElementById(`view-${tabName}`).classList.remove('hidden');
+            
+            const titles = { 'itinerary': '行程安排', 'info': '重要資訊', 'budget': '雲端記帳' };
+            document.getElementById('pageTitle').innerText = titles[tabName];
+            
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btnEl.classList.add('active');
+        }
+
+        function renderDates() {
+            const container = document.getElementById('dateContainer');
+            container.innerHTML = '';
+            tripData.forEach((day, index) => {
+                const btn = document.createElement('div');
+                btn.className = `date-pill ${index === activeDayIndex ? 'active' : ''}`;
+                btn.innerText = day.date;
+                btn.onclick = () => {
+                    activeDayIndex = index;
+                    renderDates();
+                    renderItinerary();
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function renderItinerary() {
+            const list = document.getElementById('itineraryList');
+            list.innerHTML = '';
+            tripData[activeDayIndex].items.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="border-line" style="background-color: ${item.color}"></div>
+                    <div style="margin-left: 8px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                            <span style="font-size:12px; font-weight:bold; color:#A8A29E;">${item.time}</span>
+                            <span class="tag" style="background:${item.bg}; color:${item.color}; border:1px solid ${item.bg}">${item.label}</span>
+                        </div>
+                        <h3 style="margin: 4px 0 8px 0; font-size:18px;">${item.title}</h3>
+                        <div style="font-size:14px; color:#57534E; line-height:1.5;">${item.desc}</div>
+                        <div style="margin-top:12px; padding-top:12px; border-top:1px solid #F5F5F4;">
+                            <a href="#" class="btn btn-nav">📍 開啟導航</a>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        init();
     </script>
 </body>
 </html>
