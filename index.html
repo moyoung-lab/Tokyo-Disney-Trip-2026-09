@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>東京旅記 2026</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <style>
+        body { font-family: 'Noto Sans JP', sans-serif; -webkit-tap-highlight-color: transparent; }
+        /* 隱藏捲軸但保留功能 */
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* 日式標籤樣式 */
+        .tag-food { @apply bg-orange-100 text-orange-700 border border-orange-200; }
+        .tag-spot { @apply bg-rose-100 text-rose-700 border border-rose-200; }
+        .tag-transport { @apply bg-sky-100 text-sky-700 border border-sky-200; }
+        
+        /* 重點文字高亮 */
+        .highlight-must { @apply font-bold text-rose-600 bg-rose-50 px-1 rounded; }
+        .highlight-code { @apply font-mono font-bold text-slate-700 bg-slate-100 px-1 border border-slate-300 rounded tracking-wider; }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800 h-screen flex flex-col overflow-hidden" x-data="appData()">
+
+    <header class="pt-12 pb-4 px-6 bg-white/80 backdrop-blur-md sticky top-0 z-10 border-b border-stone-200">
+        <div class="flex justify-between items-end">
+            <div>
+                <p class="text-xs text-stone-400 font-medium tracking-widest uppercase">TOKYO TRIP 2026</p>
+                <h1 class="text-2xl font-bold text-stone-800 mt-1" x-text="currentTab === 'itinerary' ? '行程' : (currentTab === 'info' ? '資訊' : '記帳')"></h1>
+            </div>
+            <div class="text-right" x-show="currentTab === 'itinerary'">
+                <div class="flex items-center justify-end gap-2 text-stone-600">
+                    <i class="ph ph-sun text-amber-400 text-xl"></i>
+                    <span class="text-lg font-bold">24°C</span>
+                </div>
+                <p class="text-xs text-stone-400">降雨機率 10%</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto hide-scrollbar p-6 pb-24 space-y-6">
+
+        <div x-show="currentTab === 'itinerary'" x-transition.opacity>
+            <div class="flex gap-3 overflow-x-auto hide-scrollbar mb-6">
+                <template x-for="(day, index) in itinerary" :key="index">
+                    <button @click="activeDay = index" 
+                        :class="activeDay === index ? 'bg-stone-800 text-white shadow-lg' : 'bg-white text-stone-400 border border-stone-200'"
+                        class="flex-shrink-0 px-5 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap">
+                        <span x-text="day.date"></span>
+                    </button>
+                </template>
+            </div>
+
+            <div class="space-y-4">
+                <template x-for="item in itinerary[activeDay].items" :key="item.id">
+                    <div class="bg-white rounded-2xl p-5 shadow-sm border border-stone-100 relative overflow-hidden group">
+                        <div class="absolute left-0 top-0 bottom-0 w-1.5" 
+                             :class="{
+                                'bg-rose-400': item.type === 'spot',
+                                'bg-orange-400': item.type === 'food',
+                                'bg-sky-400': item.type === 'transport'
+                             }"></div>
+
+                        <div class="pl-3">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-xs font-bold text-stone-400 tracking-wide" x-text="item.time"></span>
+                                <span class="text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wider"
+                                    :class="{
+                                        'tag-spot': item.type === 'spot',
+                                        'tag-food': item.type === 'food',
+                                        'tag-transport': item.type === 'transport'
+                                    }" x-text="item.typeLabel"></span>
+                            </div>
+                            
+                            <h3 class="text-lg font-bold text-stone-800 mb-1" x-text="item.title"></h3>
+                            
+                            <div class="text-sm text-stone-600 leading-relaxed mb-4" x-html="item.desc"></div>
+
+                            <div class="flex gap-3 mt-3 pt-3 border-t border-stone-100">
+                                <a :href="'https://www.google.com/maps/search/?api=1&query=' + item.title" target="_blank"
+                                   class="flex-1 flex items-center justify-center gap-2 bg-stone-100 hover:bg-stone-200 text-stone-600 text-xs font-bold py-2.5 rounded-xl transition-colors">
+                                    <i class="ph-bold ph-navigation-arrow"></i> 導航 GO
+                                </a>
+                                <button class="w-10 flex items-center justify-center text-stone-400 hover:text-stone-600">
+                                    <i class="ph ph-heart text-xl"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <div x-show="currentTab === 'info'" x-transition.opacity class="space-y-6">
+            
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-stone-100">
+                <h3 class="text-sm font-bold text-stone-400 uppercase mb-4 flex items-center gap-2">
+                    <i class="ph-bold ph-airplane-tilt"></i> 航班資訊
+                </h3>
+                <div class="flex justify-between items-center mb-4">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold">TPE</div>
+                        <div class="text-xs text-stone-500">08:30</div>
+                    </div>
+                    <div class="flex-1 px-4 flex flex-col items-center">
+                        <span class="text-xs font-bold text-stone-400">JX800</span>
+                        <div class="w-full h-px bg-stone-300 relative my-1">
+                            <i class="ph-fill ph-airplane absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 text-stone-400 bg-white px-1"></i>
+                        </div>
+                        <span class="text-xs text-stone-400">3h 40m</span>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold">NRT</div>
+                        <div class="text-xs text-stone-500">13:10</div>
+                    </div>
+                </div>
+                <div class="bg-stone-50 rounded-lg p-3 text-sm text-stone-600 flex justify-between">
+                    <span>預約代號</span>
+                    <span class="font-mono font-bold select-all">6X2A9B</span>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-stone-100">
+                <h3 class="text-sm font-bold text-stone-400 uppercase mb-4 flex items-center gap-2">
+                    <i class="ph-bold ph-house-line"></i> 住宿資訊
+                </h3>
+                <h4 class="font-bold text-lg mb-1">東京灣希爾頓飯店</h4>
+                <p class="text-xs text-stone-500 mb-3">千葉県浦安市舞浜1-8</p>
+                <div class="flex gap-2">
+                    <span class="highlight-code text-xs">訂房號: 882910</span>
+                    <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold">已付款</span>
+                </div>
+            </div>
+
+            <div class="bg-red-50 rounded-2xl p-6 border border-red-100">
+                 <h3 class="text-sm font-bold text-red-400 uppercase mb-3">緊急聯絡</h3>
+                 <div class="grid grid-cols-2 gap-4">
+                     <a href="tel:110" class="bg-white p-3 rounded-xl flex flex-col items-center shadow-sm">
+                         <span class="text-2xl font-bold text-red-600">110</span>
+                         <span class="text-xs text-stone-500">警察局</span>
+                     </a>
+                     <a href="tel:119" class="bg-white p-3 rounded-xl flex flex-col items-center shadow-sm">
+                         <span class="text-2xl font-bold text-red-600">119</span>
+                         <span class="text-xs text-stone-500">救護/火警</span>
+                     </a>
+                 </div>
+            </div>
+        </div>
+
+        <div x-show="currentTab === 'budget'" x-transition.opacity>
+            <div class="bg-stone-800 text-white rounded-2xl p-6 shadow-lg mb-6 relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 text-stone-700 opacity-20">
+                    <i class="ph-fill ph-coins text-9xl"></i>
+                </div>
+                <p class="text-stone-400 text-xs uppercase tracking-wider mb-1">目前總花費 (TWD)</p>
+                <p class="text-4xl font-bold tracking-tight" x-text="formatCurrency(totalExpense)"></p>
+                <div class="mt-4 pt-4 border-t border-stone-700 flex justify-between text-xs text-stone-400">
+                    <span>預算剩餘</span>
+                    <span x-text="formatCurrency(100000 - totalExpense)"></span>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-stone-100 mb-6">
+                <h3 class="text-sm font-bold text-stone-800 mb-3">新增支出</h3>
+                <div class="flex gap-2 mb-3">
+                    <input type="text" x-model="newExpenseName" placeholder="項目 (例: 拉麵)" 
+                        class="flex-1 bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-stone-400">
+                    <input type="number" x-model="newExpenseAmount" placeholder="金額" 
+                        class="w-24 bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-stone-400">
+                </div>
+                <button @click="addExpense()" 
+                    class="w-full bg-stone-800 text-white font-bold py-3 rounded-xl text-sm hover:bg-stone-700 active:scale-95 transition-all">
+                    加入清單
+                </button>
+            </div>
+
+            <div class="space-y-3">
+                <template x-for="(exp, index) in expenses" :key="index">
+                    <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-stone-50">
+                        <span class="font-medium text-stone-700" x-text="exp.name"></span>
+                        <div class="flex items-center gap-3">
+                            <span class="font-bold text-stone-800" x-text="formatCurrency(exp.amount)"></span>
+                            <button @click="removeExpense(index)" class="text-stone-300 hover:text-red-400">
+                                <i class="ph-bold ph-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </template>
+                <div x-show="expenses.length === 0" class="text-center text-stone-400 py-8 text-sm">
+                    目前沒有支出紀錄
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <nav class="bg-white border-t border-stone-200 pb-safe pt-2 px-6 fixed bottom-0 w-full z-20 h-20">
+        <div class="flex justify-around items-center h-full pb-4">
+            <button @click="currentTab = 'itinerary'" class="flex flex-col items-center gap-1 w-16 group">
+                <div class="p-1.5 rounded-full transition-colors" :class="currentTab === 'itinerary' ? 'bg-stone-100' : ''">
+                    <i class="text-2xl transition-colors ph-bold ph-map-trifold" 
+                       :class="currentTab === 'itinerary' ? 'text-stone-800' : 'text-stone-400'"></i>
+                </div>
+                <span class="text-[10px] font-medium transition-colors" :class="currentTab === 'itinerary' ? 'text-stone-800' : 'text-stone-400'">行程</span>
+            </button>
+            
+            <button @click="currentTab = 'info'" class="flex flex-col items-center gap-1 w-16 group">
+                <div class="p-1.5 rounded-full transition-colors" :class="currentTab === 'info' ? 'bg-stone-100' : ''">
+                    <i class="text-2xl transition-colors ph-bold ph-suitcase" 
+                       :class="currentTab === 'info' ? 'text-stone-800' : 'text-stone-400'"></i>
+                </div>
+                <span class="text-[10px] font-medium transition-colors" :class="currentTab === 'info' ? 'text-stone-800' : 'text-stone-400'">資訊</span>
+            </button>
+            
+            <button @click="currentTab = 'budget'" class="flex flex-col items-center gap-1 w-16 group">
+                <div class="p-1.5 rounded-full transition-colors" :class="currentTab === 'budget' ? 'bg-stone-100' : ''">
+                    <i class="text-2xl transition-colors ph-bold ph-currency-yen" 
+                       :class="currentTab === 'budget' ? 'text-stone-800' : 'text-stone-400'"></i>
+                </div>
+                <span class="text-[10px] font-medium transition-colors" :class="currentTab === 'budget' ? 'text-stone-800' : 'text-stone-400'">記帳</span>
+            </button>
+        </div>
+    </nav>
+
+    <script>
+        function appData() {
+            return {
+                currentTab: 'itinerary',
+                activeDay: 0,
+                
+                // 記帳相關資料 (Local Storage)
+                expenses: JSON.parse(localStorage.getItem('tokyo_expenses') || '[]'),
+                newExpenseName: '',
+                newExpenseAmount: '',
+                
+                get totalExpense() {
+                    return this.expenses.reduce((sum, item) => sum + parseInt(item.amount), 0);
+                },
+
+                addExpense() {
+                    if (!this.newExpenseName || !this.newExpenseAmount) return;
+                    this.expenses.unshift({
+                        name: this.newExpenseName,
+                        amount: this.newExpenseAmount,
+                        date: new Date().toISOString()
+                    });
+                    this.saveExpenses();
+                    this.newExpenseName = '';
+                    this.newExpenseAmount = '';
+                },
+
+                removeExpense(index) {
+                    if(confirm('確定刪除這筆紀錄？')) {
+                        this.expenses.splice(index, 1);
+                        this.saveExpenses();
+                    }
+                },
+
+                saveExpenses() {
+                    localStorage.setItem('tokyo_expenses', JSON.stringify(this.expenses));
+                },
+
+                formatCurrency(value) {
+                    return new Intl.NumberFormat('zh-TW', { style: 'currency', currency: 'TWD', minimumFractionDigits: 0 }).format(value);
+                },
+
+                // 行程資料 (Mock Data)
+                itinerary: [
+                    {
+                        date: 'Day 1 (9/15)',
+                        items: [
+                            { 
+                                id: 1, type: 'transport', typeLabel: '交通', time: '13:10', title: '抵達東京成田', 
+                                desc: '前往租車櫃檯取車。預約公司：Toyota Rent a Car。<br>取車單號：<span class="highlight-code">TR-9982</span>' 
+                            },
+                            { 
+                                id: 2, type: 'spot', typeLabel: '景點', time: '15:30', title: '台場獨角獸鋼彈', 
+                                desc: '適合拍照的打卡點，如果時間允許可以去逛逛旁邊的 DiverCity。<br><span class="highlight-must">攻略：每小時整點有變身演出。</span>' 
+                            },
+                            { 
+                                id: 3, type: 'food', typeLabel: '晚餐', time: '18:00', title: 'Afuri 柚子鹽拉麵', 
+                                desc: '必點：<span class="highlight-must">柚子鹽拉麵 (淡麗)</span> + 炙燒叉燒飯。這間店通常需要排隊 20 分鐘。' 
+                            }
+                        ]
+                    },
+                    {
+                        date: 'Day 2 (9/16)',
+                        items: [
+                            { 
+                                id: 4, type: 'transport', typeLabel: '交通', time: '08:00', title: '自駕前往迪士尼', 
+                                desc: '設定導航至迪士尼海洋停車場。停車費約 ¥3000。' 
+                            },
+                            { 
+                                id: 5, type: 'spot', typeLabel: '樂園', time: '09:00', title: '東京迪士尼海洋', 
+                                desc: '今日重點：<span class="highlight-must">Fantasy Springs 新園區</span>。<br>請務必在入園後第一時間抽取 DPA (Standby Pass)。<br>必買：達菲熊限定爆米花桶。' 
+                            },
+                            { 
+                                id: 6, type: 'food', typeLabel: '午餐', time: '12:30', title: '麥哲倫餐廳', 
+                                desc: '需提前一個月預約。預約號碼：<span class="highlight-code">RES-2026-0916</span>' 
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    </script>
+</body>
+</html>
